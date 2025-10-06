@@ -5,9 +5,9 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'Payslip Distribution System',
+  description: 'Secure employee payslip distribution system for HR and payroll management',
+
 }
 
 export default function RootLayout({
