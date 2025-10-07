@@ -1,27 +1,7 @@
 import { jsPDF } from "jspdf"
-import nodemailer from "nodemailer"
 
 interface EmployeeData {
   [key: string]: string | number
-}
-
-interface EmailConfig {
-  host: string
-  port: number
-  user: string
-  password: string
-  from: string
-}
-
-interface EmailOptions {
-  to: string
-  subject: string
-  html: string
-  attachments: Array<{
-    filename: string
-    content: Buffer
-  }>
-  config: EmailConfig
 }
 
 export async function generatePayslipPDF(employee: any): Promise<Buffer> {
@@ -263,27 +243,16 @@ export async function generatePayslipPDF(employee: any): Promise<Buffer> {
   doc.setTextColor(lightGray[0], lightGray[1], lightGray[2])
   doc.text("This is a system generated payslip.", 105, yPos, { align: "center" })
 
-  // Convert to buffer
+  // Convert to buffer and clean up memory
   const pdfOutput = doc.output("arraybuffer")
-  return Buffer.from(pdfOutput)
-}
-
-export async function sendEmail({ to, subject, html, attachments, config }: EmailOptions) {
-  const transporter = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: true,
-    auth: {
-      user: config.user,
-      pass: config.password,
-    },
-  })
-
-  await transporter.sendMail({
-    from: config.from,
-    to,
-    subject,
-    html,
-    attachments,
-  })
+  const buffer = Buffer.from(pdfOutput)
+  
+  // Clean up the doc object to free memory
+  try {
+    (doc as any).destroy?.();
+  } catch (e) {
+    // Ignore cleanup errors
+  }
+  
+  return buffer
 }

@@ -28,13 +28,24 @@ export async function sendEmail({ to, subject, html, attachments, config }: Emai
       user: config.user,
       pass: config.password,
     },
+    // Add connection timeout
+    connectionTimeout: 10000, // 10 seconds
+    // Add greeting timeout
+    greetingTimeout: 5000, // 5 seconds
   })
 
-  await transporter.sendMail({
+  // Verify connection configuration
+  await transporter.verify()
+
+  const mailOptions = {
     from: config.from,
     to,
     subject,
     html,
     attachments,
-  })
+    // Add delivery timeout
+    timeout: 30000, // 30 seconds
+  }
+
+  await transporter.sendMail(mailOptions)
 }
