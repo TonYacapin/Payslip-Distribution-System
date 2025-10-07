@@ -212,7 +212,7 @@ export default function PayslipSystem() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Email Password</Label>
+                <Label htmlFor="password">App Password</Label>
                 <Input
                   id="password"
                   type="password"
