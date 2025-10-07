@@ -1,10 +1,27 @@
-
-
 import { jsPDF } from "jspdf"
-import fslogo from "../public/FSLOGO.webp"
+import nodemailer from "nodemailer"
 
 interface EmployeeData {
   [key: string]: string | number
+}
+
+interface EmailConfig {
+  host: string
+  port: number
+  user: string
+  password: string
+  from: string
+}
+
+interface EmailOptions {
+  to: string
+  subject: string
+  html: string
+  attachments: Array<{
+    filename: string
+    content: Buffer
+  }>
+  config: EmailConfig
 }
 
 export async function generatePayslipPDF(employee: any): Promise<Buffer> {
@@ -22,90 +39,88 @@ export async function generatePayslipPDF(employee: any): Promise<Buffer> {
     return Number(numValue).toFixed(2)
   }
 
+  // Debug: Log all available fields to help with matching
+  console.log("Available fields in employee data:", Object.keys(employee))
+
   // Colors matching the template
   const tealColor: [number, number, number] = [13, 148, 136]
   const darkGray: [number, number, number] = [51, 51, 51]
   const lightGray: [number, number, number] = [128, 128, 128]
 
-  // Helper function to get field value with case-insensitive matching and fallbacks
+  // Improved helper function to get field value with better matching
   const getField = (fieldName: string): string | number => {
-    const lowerFieldName = fieldName.toLowerCase()
+    const lowerFieldName = fieldName.toLowerCase().trim()
     
-    // Try exact match first
+    // First try exact case-insensitive match
     for (const key in employee) {
-      if (key.toLowerCase() === lowerFieldName) {
+      if (key.toLowerCase().trim() === lowerFieldName) {
+        console.log(`Exact match found for "${fieldName}": "${key}" = "${employee[key]}"`)
         return employee[key]
       }
     }
     
-    // Try partial matches for common fields
-    if (lowerFieldName.includes("employee")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("employee") && key.toLowerCase().includes("id")) {
-          return employee[key]
+    // Try common variations and partial matches
+    const variations: { [key: string]: string[] } = {
+      "employee id": ["employee id", "employeeid", "emp id", "empid", "id", "employee no", "employeeno"],
+      "first name": ["first name", "firstname", "fname", "given name"],
+      "middle name": ["middle name", "middlename", "mname"],
+      "last name": ["last name", "lastname", "lname", "surname", "family name"],
+      "job title": ["job title", "jobtitle", "position", "job", "title", "designation"],
+      "date from": ["date from", "datefrom", "period from", "periodfrom", "start date", "startdate"],
+      "date to": ["date to", "dateto", "period to", "periodto", "end date", "enddate"],
+      "date payment": ["date payment", "datepayment", "pay date", "paydate", "payment date"],
+      "basic pay": ["basic pay", "basicpay", "basic", "base pay", "basepay"],
+      "total earnings": ["total earnings", "totalearnings", "gross pay", "grosspay", "gross"],
+      "total deductions": ["total deductions", "totaldeductions", "deductions total"],
+      "net pay": ["net pay", "netpay", "take home", "takehome", "net amount"],
+      "regular ot": ["regular ot", "regularot", "overtime", "ot"],
+      "special holiday premium pay": ["special holiday premium pay", "special holiday", "holiday pay"],
+      "regular holiday premium pay": ["regular holiday premium pay", "regular holiday", "holiday premium"],
+      "night differential": ["night differential", "nightdiff", "night diff"],
+      "transportation allowance": ["transportation allowance", "transportation", "transpo allowance"],
+      "other pay (taxable)": ["other pay (taxable)", "other pay", "otherpay", "taxable pay"],
+      "spot bonus": ["spot bonus", "spotbonus", "bonus"],
+      "rest day ot": ["rest day ot", "restday ot", "rest day overtime"],
+      "absences": ["absences", "absence"],
+      "undertime/tardiness": ["undertime/tardiness", "undertime", "tardiness", "late"],
+      "sss (ee)": ["sss (ee)", "sss", "sss ee"],
+      "hdmf (ee)": ["hdmf (ee)", "hdmf", "pagibig", "pag-ibig"],
+      "phic (ee)": ["phic (ee)", "phic", "philhealth"],
+      "sss loan": ["sss loan", "sssloan"],
+      "hdmf loan": ["hdmf loan", "hdmfloan", "pagibig loan"],
+      "salary loan repayment": ["salary loan repayment", "salary loan", "loan repayment"]
+    }
+
+    if (variations[lowerFieldName]) {
+      for (const variation of variations[lowerFieldName]) {
+        for (const key in employee) {
+          if (key.toLowerCase().trim() === variation) {
+            console.log(`Variation match found for "${fieldName}": "${key}" = "${employee[key]}"`)
+            return employee[key]
+          }
         }
       }
     }
-    
-    if (lowerFieldName.includes("first")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("first") && key.toLowerCase().includes("name")) {
-          return employee[key]
-        }
+
+    // Try contains matching as last resort
+    for (const key in employee) {
+      const lowerKey = key.toLowerCase().trim()
+      if (lowerKey.includes(lowerFieldName) || lowerFieldName.includes(lowerKey)) {
+        console.log(`Contains match found for "${fieldName}": "${key}" = "${employee[key]}"`)
+        return employee[key]
       }
     }
-    
-    if (lowerFieldName.includes("last")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("last") && key.toLowerCase().includes("name")) {
-          return employee[key]
-        }
-      }
-    }
-    
-    if (lowerFieldName.includes("middle")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("middle") && key.toLowerCase().includes("name")) {
-          return employee[key]
-        }
-      }
-    }
-    
-    if (lowerFieldName.includes("job") || lowerFieldName.includes("title")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("job") || key.toLowerCase().includes("title")) {
-          return employee[key]
-        }
-      }
-    }
-    
-    if (lowerFieldName.includes("date from")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("date") && key.toLowerCase().includes("from")) {
-          return employee[key]
-        }
-      }
-    }
-    
-    if (lowerFieldName.includes("date to")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("date") && key.toLowerCase().includes("to")) {
-          return employee[key]
-        }
-      }
-    }
-    
-    if (lowerFieldName.includes("date payment")) {
-      for (const key in employee) {
-        if (key.toLowerCase().includes("date") && key.toLowerCase().includes("payment")) {
-          return employee[key]
-        }
-      }
-    }
-    
+
+    console.log(`No match found for field: "${fieldName}"`)
     return ""
   }
 
+  // Get employee ID safely for debugging
+  const employeeId = safeText(getField("employee id"))
+  const dateFrom = safeText(getField("date from"))
+  
+  console.log(`Employee ID resolved to: "${employeeId}"`)
+  console.log(`Date From resolved to: "${dateFrom}"`)
 
   // Payslip Title
   doc.setFontSize(20)
@@ -116,10 +131,10 @@ export async function generatePayslipPDF(employee: any): Promise<Buffer> {
   // Employee Information - Left Side
   doc.setFontSize(9)
   doc.setFont("helvetica", "bold")
-  doc.text(safeText(getField("employee id")), 20, 65)
+  doc.text(employeeId || "N/A", 20, 65) // Use "N/A" if employee ID not found
   doc.setFont("helvetica", "normal")
   doc.text(
-    `${safeText(getField("first name"))} ${safeText(getField("middle name"))} ${safeText(getField("last name"))}`,
+    `${safeText(getField("first name"))} ${safeText(getField("middle name"))} ${safeText(getField("last name"))}`.trim(),
     20,
     70,
   )
@@ -251,4 +266,24 @@ export async function generatePayslipPDF(employee: any): Promise<Buffer> {
   // Convert to buffer
   const pdfOutput = doc.output("arraybuffer")
   return Buffer.from(pdfOutput)
+}
+
+export async function sendEmail({ to, subject, html, attachments, config }: EmailOptions) {
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: true,
+    auth: {
+      user: config.user,
+      pass: config.password,
+    },
+  })
+
+  await transporter.sendMail({
+    from: config.from,
+    to,
+    subject,
+    html,
+    attachments,
+  })
 }

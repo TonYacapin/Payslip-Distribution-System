@@ -1,3 +1,4 @@
+
 import type { NextRequest } from "next/server"
 import { generatePayslipPDF } from "@/lib/generate-payslip"
 import { sendEmail } from "@/lib/send-email"
@@ -75,8 +76,10 @@ export async function POST(request: NextRequest) {
           employees.push(employee)
         }
 
-        console.log(" Parsed employees:", employees.length)
-        console.log(" First employee:", employees[0])
+        console.log("CSV Headers found:", headers)
+        console.log("Parsed employees:", employees.length)
+        console.log("First employee fields:", Object.keys(employees[0]))
+        console.log("First employee data:", employees[0])
 
         let sent = 0
         let failed = 0
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
         for (const employee of employees) {
           const email = employee.Email || employee.email
 
-          console.log(" Processing employee:", employee["Employee ID"], "Email:", email)
+          console.log("Processing employee:", employee["Employee ID"], "Email:", email)
 
           try {
             // Send status update
@@ -103,7 +106,7 @@ export async function POST(request: NextRequest) {
             )
 
             if (!email) {
-              console.log(" No email found for employee:", employee["Employee ID"])
+              console.log("No email found for employee:", employee["Employee ID"])
               failed++
               continue
             }
@@ -111,11 +114,20 @@ export async function POST(request: NextRequest) {
             // Generate PDF
             const pdfBuffer = await generatePayslipPDF(employee)
 
-            // Get safe values for email
-            const firstName = employee["First Name"] || employee["first name"] || ""
-            const lastName = employee["Last Name"] || employee["last name"] || ""
-            const dateFrom = employee["Date From"] || employee["date from"] || ""
-            const dateTo = employee["Date To"] || employee["date to"] || ""
+            // Get safe values for email with better fallbacks
+            const firstName = employee["First Name"] || employee["first name"] || employee["First Name"] || ""
+            const lastName = employee["Last Name"] || employee["last name"] || employee["Last Name"] || ""
+            const dateFrom = employee["Date From"] || employee["date from"] || employee["Date From"] || ""
+            const dateTo = employee["Date To"] || employee["date to"] || employee["Date To"] || ""
+
+            // Create a safe filename - use multiple fallbacks for employee ID
+            const employeeId = employee["Employee ID"] || employee["employee id"] || employee["Employee ID"] || 
+                              employee["Emp ID"] || employee["emp id"] || `EMP-${sent + 1}`
+            
+            const safeDateFrom = dateFrom.replace(/\//g, "-") // Replace slashes with dashes for filename safety
+            const safeFilename = `Payslip_${employeeId}_${safeDateFrom}.pdf`
+
+            console.log(`Generated filename: ${safeFilename}`)
 
             // Send email
             await sendEmail({
@@ -132,7 +144,7 @@ export async function POST(request: NextRequest) {
               `,
               attachments: [
                 {
-                  filename: `Payslip_${employee["Employee ID"]}_${dateFrom}.pdf`,
+                  filename: safeFilename,
                   content: pdfBuffer,
                 },
               ],
@@ -140,9 +152,9 @@ export async function POST(request: NextRequest) {
             })
 
             sent++
-            console.log(" Successfully sent to:", email)
+            console.log("Successfully sent to:", email)
           } catch (error) {
-            console.error(" Failed to send to", email, ":", error)
+            console.error("Failed to send to", email, ":", error)
             failed++
           }
         }
@@ -164,7 +176,7 @@ export async function POST(request: NextRequest) {
 
         controller.close()
       } catch (error) {
-        console.error(" Error processing payslips:", error)
+        console.error("Error processing payslips:", error)
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({
