@@ -272,6 +272,7 @@ async function processEmployee(employee: any, emailConfig: any) {
     const lastName = employee["Last Name"] || employee["last name"] || employee["Last Name"] || ""
     const dateFrom = employee["Date From"] || employee["date from"] || employee["Date From"] || ""
     const dateTo = employee["Date To"] || employee["date to"] || employee["Date To"] || ""
+    const creditDate = employee["Credit Date"] || employee["credit date"] || "September 10, 2025"
 
     // Create a safe filename
     const employeeId = employee["Employee ID"] || employee["employee id"] || employee["Employee ID"] || 
@@ -282,17 +283,40 @@ async function processEmployee(employee: any, emailConfig: any) {
 
     console.log(`Generated filename: ${safeFilename}`)
 
-    // Send email
+    // Format dates for display
+    const displayDateFrom = formatDateForDisplay(dateFrom)
+    const displayDateTo = formatDateForDisplay(dateTo)
+    const displayCreditDate = formatDateForDisplay(creditDate)
+
+    // Send email with new format
     await sendEmail({
       to: email,
-      subject: `Payslip for ${dateFrom} - ${dateTo}`,
+      subject: `Payslip for ${firstName} ${lastName} for the duration from ${displayDateFrom} to ${displayDateTo}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #0d9488;">Your Payslip is Ready</h2>
-          <p>Dear ${firstName} ${lastName},</p>
-          <p>Please find attached your payslip for the period ${dateFrom} to ${dateTo}.</p>
-          <p>If you have any questions, please contact HR.</p>
-          <p style="margin-top: 30px; color: #666;">Best regards,<br/>FullSuite Payroll Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+          <h2 style="color: #0097b2; margin-bottom: 5px;">Payslip for ${firstName} ${lastName}</h2>
+          <p style="color: #666; margin-top: 0; font-size: 16px;">for the duration from ${displayDateFrom} to ${displayDateTo}</p>
+          
+          <div style="margin: 25px 0;">
+            <p style="margin: 15px 0;">Hi,</p>
+            
+            <p style="margin: 15px 0;">
+              Attached is your payslip for the period covering from ${displayDateFrom} to ${displayDateTo}. 
+              This has been approved for credit to your respective account on ${displayCreditDate}.
+            </p>
+            
+            <p style="margin: 15px 0;">
+              If you have any questions or issues regarding your payroll or payslip, please get in touch with the payroll accountant.
+            </p>
+            
+            <p style="margin: 15px 0; color: #666; font-style: italic;">
+              (Please do not reply to this email.)
+            </p>
+          </div>
+          
+          <div style="border-top: 2px solid #0097b2; padding-top: 20px; margin-top: 30px;">
+            <p style="color: #666; margin: 0;">Best regards,<br/><strong>FullSuite Payroll Team</strong></p>
+          </div>
         </div>
       `,
       attachments: [
@@ -312,5 +336,27 @@ async function processEmployee(employee: any, emailConfig: any) {
       email, 
       error: error instanceof Error ? error.message : "Unknown error" 
     }
+  }
+}
+
+// Helper function to format dates for display
+function formatDateForDisplay(dateString: string): string {
+  if (!dateString) return ""
+  
+  try {
+    // Try to parse the date and format it
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      // If parsing fails, return the original string
+      return dateString
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch {
+    return dateString
   }
 }
