@@ -1,6 +1,4 @@
 import { jsPDF } from "jspdf"
-import fs from "fs"
-import path from "path"
 
 interface EmployeeData {
   [key: string]: string | number
@@ -37,51 +35,8 @@ export async function generatePayslipPDF(employee: any): Promise<Buffer> {
     return ""
   }
 
-  // --- Header Section with properly sized logo ---
-  try {
-    const logoPath = path.join(process.cwd(), "public", "FSLOGO.png")
-    const logoBuffer = fs.readFileSync(logoPath)
-    const logoBase64 = logoBuffer.toString("base64")
-    const logoDataUrl = `data:image/png;base64,${logoBase64}`
-    
-    // Use original dimensions: 750×172, scaled down appropriately
-    // Calculate width to maintain aspect ratio while fitting nicely
-    const originalWidth = 750
-    const originalHeight = 172
-    const aspectRatio = originalHeight / originalWidth
-    
-    // Set logo width to span most of the page width, height calculated from aspect ratio
-    const logoWidth = 80 // Increased width to prevent wrapping/stretching
-    const logoHeight = logoWidth * aspectRatio // Maintain aspect ratio
-    
-    // Center the logo horizontally
-    const pageWidth = 210 // A4 width in mm
-    const logoX = (pageWidth - logoWidth) / 2
-    
-    doc.addImage(logoDataUrl, "PNG", logoX, 10, logoWidth, logoHeight)
-  } catch (error) {
-    console.error("Error adding logo:", error)
-  }
-
-  // Company Info (centered under logo) - adjusted position based on logo height
-  const logoBottom = 10 + (80 * (172 / 750)) // Calculate where logo ends
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2])
-  doc.setFont("helvetica", "bold")
-  doc.setFontSize(10)
-  doc.text("FullSuite", 105, logoBottom + 10, { align: "center" })
-
-  doc.setFont("helvetica", "normal")
-  doc.setFontSize(8)
-  doc.text("5th Floor, 19 Ben Palispis Highway, Legarda-", 105, logoBottom + 15, { align: "center" })
-  doc.text("Burnham-Kisad, Baguio City, North Luzon, Benguet, 2600", 105, logoBottom + 19, { align: "center" })
-
-  // Payslip Title
-  doc.setFont("helvetica", "bold")
-  doc.setFontSize(18)
-  doc.text("Payslip", 105, logoBottom + 30, { align: "center" })
-
   // --- Employee Info ---
-  const infoStartY = logoBottom + 45
+  const infoStartY = 60 // Start at top of page since header is removed
   doc.setFontSize(9)
   doc.setTextColor(darkGray[0], darkGray[1], darkGray[2])
 

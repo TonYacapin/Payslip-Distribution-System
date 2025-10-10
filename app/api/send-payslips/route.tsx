@@ -314,9 +314,6 @@ async function processEmployee(employee: any, emailConfig: any) {
             </p>
           </div>
           
-          <div style="border-top: 2px solid #0097b2; padding-top: 20px; margin-top: 30px;">
-            <p style="color: #666; margin: 0;">Best regards,<br/><strong>FullSuite Payroll Team</strong></p>
-          </div>
         </div>
       `,
       attachments: [
