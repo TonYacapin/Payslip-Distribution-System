@@ -93,7 +93,8 @@ export async function generatePayslipPDF(employee: any): Promise<Buffer> {
     { label: "Transportation Allowance", field: "transportation allowance" },
     { label: "Other Pay (Taxable)", field: "other pay (taxable)" },
     { label: "Spot Bonus", field: "spot bonus" },
-    { label: "Rest Day OT", field: "rest day ot" }
+    { label: "Rest Day OT", field: "rest day ot" },
+    { label: "14th Month Pay", field: "14th month pay" } // Added 14th Month Pay
   ]
 
   earnings.forEach(item => {

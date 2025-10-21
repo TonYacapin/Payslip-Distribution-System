@@ -1,3 +1,4 @@
+
 import type { NextRequest } from "next/server"
 import { generatePayslipPDF } from "@/lib/generate-payslip"
 import { sendEmail } from "@/lib/send-email"
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
 
           headers.forEach((header, index) => {
             const value = values[index]
-            // Convert numeric fields
+            // Convert numeric fields - Added 14th Month Pay to the list
             if (
               header.includes("Pay") ||
               header.includes("OT") ||
@@ -70,7 +71,8 @@ export async function POST(request: NextRequest) {
               header.includes("Adjustment") ||
               header.includes("Advances") ||
               header.includes("ECC") ||
-              header.includes("Provident")
+              header.includes("Provident") ||
+              header.includes("14th Month") // Added this line
             ) {
               employee[header] = value ? Number.parseFloat(value) || 0 : 0
             } else {
